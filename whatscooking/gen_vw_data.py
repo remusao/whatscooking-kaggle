@@ -16,6 +16,7 @@ Options:
 from __future__ import print_function
 from sklearn.preprocessing import LabelEncoder
 from sklearn.cross_validation import StratifiedKFold
+from collections import Counter
 import docopt
 import json
 import itertools
@@ -47,15 +48,19 @@ def analyze(ingredients):
     global COUNTER
     print("Analyze", COUNTER)
     COUNTER += 1
-    features = {}
+    features = Counter()
+    total_length = 0
     for ingredient in ingredients:
         # Remove non-ascii chars
         ingredient = ''.join([l if l in LETTER else ' ' for l in ingredient.lower()])
         splitted = ingredient.split()
+        total_length += len(ingredient)
         features[ingredient] = 2.0
-        features[splitted[-1]] = 1.0
+        features[splitted[-1]] += 1.0
         for sub_ingredient in splitted[:-1]:
-            features[sub_ingredient] = 0.5
+            features[sub_ingredient] += 0.5
+    # features["n_features"] = len(features)
+    # features["avg_length"] = total_length / float(len(ingredients))
     features["n_ingredients"] = len(ingredients)
     return features
 
@@ -97,7 +102,7 @@ def main():
     y = map(lambda l: l + 1, y)
 
     print("Split train data")
-    skf = StratifiedKFold(y, 3)
+    skf = StratifiedKFold(y, 5)
     for i, (train, test) in enumerate(skf):
         X_train = (X[j] for j in train)
         Y_train = [y[j] for j in train]

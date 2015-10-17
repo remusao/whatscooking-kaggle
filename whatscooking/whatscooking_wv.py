@@ -111,7 +111,7 @@ def main():
     # Eval model with kfold
     total = 0
     score = 0
-    for i in range(3):
+    for i in range(5):
         model = train_classifier("train_%i.txt" % i, arguments)
         if model is None:
             continue

@@ -22,14 +22,9 @@ import os
 import sys
 
 
-def clean_files():
-    os.remove("output")
-    os.remove("model")
-
-
 def train_classifier(data, options):
     arguments = [
-        "/usr/local/bin/vw",
+        "/usr/bin/vw",
         data,
         "-f", "model",
         "--cache_file", "cache"
@@ -45,7 +40,7 @@ def train_classifier(data, options):
 
 def predict(model, data):
     arguments = [
-        "vw",
+        "/usr/bin/vw",
         "-t",
         "-i", model,
         "-p", "output",
@@ -111,7 +106,6 @@ def main():
     # Select best options
     arguments = [
         "--oaa", "20",
-        "--loss_function", "logistic",
         "--passes", "1000"
     ]
     # Eval model with kfold

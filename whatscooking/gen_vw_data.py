@@ -16,14 +16,9 @@ Options:
 from __future__ import print_function
 from sklearn.preprocessing import LabelEncoder
 from sklearn.cross_validation import StratifiedKFold
-from wabbit_wappa import *
 import docopt
 import json
 import itertools
-from nltk.stem.snowball import EnglishStemmer
-
-
-stemmer = EnglishStemmer(ignore_stopwords=True)
 
 
 def load_train_data(filename):
@@ -52,24 +47,38 @@ def analyze(ingredients):
     global COUNTER
     print("Analyze", COUNTER)
     COUNTER += 1
-    terms = set()
-    qualif = set()
+    features = {}
     for ingredient in ingredients:
+        # Remove non-ascii chars
         ingredient = ''.join([l if l in LETTER else ' ' for l in ingredient.lower()])
         splitted = ingredient.split()
-        terms.add(ingredient)
-        for sub_ingredient in splitted:
-            terms.add(sub_ingredient)
-    return list(terms)
+        features[ingredient] = 2.0
+        features[splitted[-1]] = 1.0
+        for sub_ingredient in splitted[:-1]:
+            features[sub_ingredient] = 0.5
+    features["n_ingredients"] = len(ingredients)
+    return features
 
 
-def output_data(clf, filename, X, y=[]):
+def make_line(label, features):
+    def normalize_feature((feature, score)):
+        feature = feature.replace(' ', '_')
+        return "%s:%s" % (feature, score)
+    if label is None:
+        label = 1
+    return "%s | %s" % (
+        label,
+        " ".join(map(normalize_feature, features.items()))
+    )
+
+
+def output_data(filename, X, y=[]):
     print(filename)
     with open(filename, "wb") as output:
         for namespaces, response in itertools.izip_longest(X, y, fillvalue=None):
             # for namespace in namespaces:
             #     clf.add_namespace(namespace)
-            print(clf.make_line(response, features=namespaces).encode("utf-8"), file=output)
+            print(make_line(response, features=namespaces).encode("utf-8"), file=output)
 
 
 def main():
@@ -88,7 +97,6 @@ def main():
     y = map(lambda l: l + 1, y)
 
     print("Split train data")
-    clf = VW()
     skf = StratifiedKFold(y, 3)
     for i, (train, test) in enumerate(skf):
         X_train = (X[j] for j in train)
@@ -97,14 +105,14 @@ def main():
         Y_test = [y[j] for j in test]
 
         # Dump splitted dataset
-        output_data(clf, "train_%i.txt" % i, X_train, Y_train)
-        output_data(clf, "test_x_%i.txt" % i, X_test)
+        output_data("train_%i.txt" % i, X_train, Y_train)
+        output_data("test_x_%i.txt" % i, X_test)
         with open("test_y_%i.txt" % i, "wb") as output:
             output.write("\n".join(map(str, Y_test)))
 
     # Full dataset and unlabeled data
-    output_data(clf, "full_train.txt", X, y)
-    output_data(clf, "to_predict.txt", X_unlabeled)
+    output_data("full_train.txt", X, y)
+    output_data("to_predict.txt", X_unlabeled)
     with open("uids.txt", "wb") as output:
         output.write("\n".join(map(str, uids_test)))
 

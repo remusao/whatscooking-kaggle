@@ -3,27 +3,23 @@
 
 
 from __future__ import print_function
-from collections import Counter
+from collections import defaultdict
 
 
 LETTER = frozenset("abcdefghijklmnopqrstuvwxyz")
-COUNTER = 0
 def analyze(ingredients):
-    global COUNTER
-    print("Analyze", COUNTER)
-    COUNTER += 1
-    features = Counter()
+    features = defaultdict(dict)
     total_length = 0
     for ingredient in ingredients:
         # Remove non-ascii chars
         ingredient = ''.join([l if l in LETTER else ' ' for l in ingredient.lower()])
         splitted = ingredient.split()
         total_length += len(ingredient)
-        features[ingredient] = 2.0
-        features[splitted[-1]] += 1.0
+        features["f"][ingredient] = 1.0
+        features["i"][splitted[-1]] = 1.0
         for sub_ingredient in splitted[:-1]:
-            features[sub_ingredient] += 0.5
-    # features["n_features"] = len(features)
-    # features["avg_length"] = total_length / float(len(ingredients))
-    features["n_ingredients"] = len(ingredients)
+            features["q"][sub_ingredient] = features["qualif"].get(sub_ingredient, 0) + 0.5
+    features["e"]["n_features"] = len(features)
+    features["e"]["avg_length"] = total_length / float(len(ingredients))
+    features["e"]["n_ingredients"] = len(ingredients)
     return features

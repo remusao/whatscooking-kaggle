@@ -54,7 +54,7 @@ def generate_data(train_path, test_path):
 
         # Dump splitted dataset
         VW.output_data("train_%i.txt" % i, X_train, Y_train)
-        VW.output_data("test_x_%i.txt" % i, X_test)
+        VW.output_data("test_x_%i.txt" % i, X_test, Y_test)
         with open("test_y_%i.txt" % i, "wb") as output:
             output.write("\n".join(map(str, Y_test)))
 

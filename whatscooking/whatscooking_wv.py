@@ -73,11 +73,12 @@ def main():
 
     # Select best options
     arguments = [
-    #    "--oaa", "20",
-        "-b", "24",
+        "--oaa", "20",
+        "-b", "18",
         "--passes", "1",
         "--sort_features",
-        "--ect", "20",
+        #"--ect", "20",
+        # "--log_multi", "20",
         "-q", "iq"
     # ['--sgd', '--adaptative', '--invariant', '--normalized'],
     ]

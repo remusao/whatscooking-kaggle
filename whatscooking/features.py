@@ -18,8 +18,9 @@ def analyze(ingredients):
         features["f"][ingredient] = 1.0
         features["i"][splitted[-1]] = 1.0
         for sub_ingredient in splitted[:-1]:
-            features["q"][sub_ingredient] = features["qualif"].get(sub_ingredient, 0) + 0.5
-    features["e"]["n_features"] = len(features)
+            features["q"][sub_ingredient] = 1.0
+    features["e"]["n_qualif"] = len(features["q"])
+    features["e"]["n_base"] = len(features["i"])
     features["e"]["avg_length"] = total_length / float(len(ingredients))
     features["e"]["n_ingredients"] = len(ingredients)
     return features

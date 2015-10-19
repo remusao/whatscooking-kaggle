@@ -74,7 +74,7 @@ def main():
     # Select best options
     arguments = [
         "--oaa", "20",
-        "-b", "18",
+        "-b", "24",
         "--passes", "1",
         "--sort_features",
         #"--ect", "20",

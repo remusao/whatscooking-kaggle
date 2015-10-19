@@ -4,9 +4,11 @@
 
 from __future__ import print_function
 from collections import defaultdict
+import nltk
 
 
 LETTER = frozenset("abcdefghijklmnopqrstuvwxyz")
+LEMMATIZER = nltk.stem.WordNetLemmatizer()
 def analyze(ingredients):
     features = defaultdict(dict)
     total_length = 0
@@ -16,8 +18,9 @@ def analyze(ingredients):
         splitted = ingredient.split()
         total_length += len(ingredient)
         features["f"][ingredient] = 1.0
-        features["i"][splitted[-1]] = 1.0
+        features["i"][LEMMATIZER.lemmatize(splitted[-1])] = 1.0
         for sub_ingredient in splitted[:-1]:
+            sub_ingredient = LEMMATIZER.lemmatize(sub_ingredient)
             features["q"][sub_ingredient] = 1.0
     features["e"]["n_qualif"] = len(features["q"])
     features["e"]["n_base"] = len(features["i"])

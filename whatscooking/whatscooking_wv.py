@@ -20,6 +20,7 @@ import json
 
 import whatscooking.data as data
 import whatscooking.vw as vw
+import whatscooking.stacking as stacking
 
 
 def compute_score(labels, prediction):
@@ -57,6 +58,17 @@ OPTIONS = [
 # --log_multi k   vs.  --oaa k   vs. --ect k   vs.  --nn k
 
 
+def create_classifier():
+    return stacking.Stacking([
+        vw.VW(["--oaa", "20", "-b", "24", "--passes", "1", "--sort_features", "-q", "iq"]),
+        vw.VW(["--log_multi", "20", "-b", "24", "--passes", "1", "--sort_features", "-q", "iq"]),
+        vw.VW(["--ect", "20", "-b", "24", "--passes", "1", "--sort_features", "-q", "iq"]),
+        vw.VW(["--oaa", "20", "--passes", "100", "--sort_features"]),
+        vw.VW(["--log_multi", "20", "--passes", "100", "--sort_features"]),
+        vw.VW(["--ect", "20", "--passes", "100", "--sort_features"])
+    ])
+
+
 def main():
     args = docopt.docopt(__doc__)
 
@@ -72,36 +84,33 @@ def main():
         uids = map(int, input_uids)
 
     # Select best options
-    arguments = [
-        "--oaa", "20",
-        "-b", "24",
-        "--passes", "1",
-        "--sort_features",
-        #"--ect", "20",
-        # "--log_multi", "20",
-        "-q", "iq"
-    # ['--sgd', '--adaptative', '--invariant', '--normalized'],
-    ]
     # Eval model with kfold
     total = 0
     score = 0
     for i in range(5):
-        clf = vw.VW(arguments)
-        clf.fit("train_%i.txt" % i)
-        prediction = clf.predict("test_x_%i.txt" % i)
+        clf = create_classifier()
+
         with open("test_y_%i.txt" % i, "rb") as input_labels:
             labels = map(int, input_labels)
+        with open("test_y_%i.txt" % ((i + 1) % 5), "rb") as input_labels:
+            stacking_labels = map(int, input_labels)
+        clf.fit(
+            X="train_%i.txt" % i,
+            X_stacker="train_%i.txt" % ((i + 1) % 5),
+            y=labels,
+            y_stacker=stacking_labels
+        )
+        prediction = clf.predict("test_x_%i.txt" % i)
         score += compute_score(labels, prediction)
         total += len(labels)
     score = float(score) / float(total)
+    print(score)
 
     # Predict unlabeled data
-    clf = vw.VW(arguments)
-    clf.fit(full_data)
+    clf = create_classifier()
+    clf.fit(full_data, "train_0.txt")
     prediction = clf.predict(to_predict)
-    print()
     print("BEST MODEL =>", score)
-    print(arguments)
 
     with open(str(score).replace(".", '_'), "wb") as output:
         print("id,cuisine", file=output)

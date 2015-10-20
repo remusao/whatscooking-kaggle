@@ -23,11 +23,55 @@ from sklearn.grid_search import GridSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import FeatureUnion
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import LabelEncoder
+from sklearn.cross_validation import StratifiedKFold
 import docopt
 import json
 import xgboost as xgb
+import nltk
 
-import whatscooking.data as data
+
+def load_train_data(filename):
+    X, Y, uids = [], [], []
+    with open(filename, "rb") as input_data:
+        for sample in json.load(input_data):
+            X.append(sample['ingredients'])
+            Y.append(sample['cuisine'])
+            uids.append(sample['id'])
+    return X, Y, uids
+
+
+def load_test_data(filename):
+    X = []
+    uids = []
+    with open(filename, "rb") as input_data:
+        for sample in json.load(input_data):
+            X.append(sample['ingredients'])
+            uids.append(sample['id'])
+    return X, uids
+
+
+LETTER = frozenset("abcdefghijklmnopqrstuvwxyz")
+COUNTER = 0
+def analyze(ingredients):
+    global COUNTER
+    print("Analyze", COUNTER)
+    COUNTER += 1
+    features = Counter()
+    total_length = 0
+    for ingredient in ingredients:
+        # Remove non-ascii chars
+        ingredient = ''.join([l if l in LETTER else ' ' for l in ingredient.lower()])
+        splitted = ingredient.split()
+        total_length += len(ingredient)
+        features[ingredient] = 2.0
+        features[splitted[-1]] += 1.0
+        for sub_ingredient in splitted[:-1]:
+            features[sub_ingredient] += 0.5
+    # features["n_features"] = len(features)
+    # features["avg_length"] = total_length / float(len(ingredients))
+    features["n_ingredients"] = len(ingredients)
+    return features
 
 
 def compute_score(labels, prediction):
@@ -58,9 +102,9 @@ def main():
     samples = 0
     skf = StratifiedKFold(y, 5)
     for i, (train, test) in enumerate(skf):
-        X_train = (X[j] for j in train)
+        X_train = (X_raw[j] for j in train)
         Y_train = [y[j] for j in train]
-        X_test = (X[j] for j in test)
+        X_test = (X_raw[j] for j in test)
         Y_test = [y[j] for j in test]
 
         clf.fit_transform(X_train, Y_train)

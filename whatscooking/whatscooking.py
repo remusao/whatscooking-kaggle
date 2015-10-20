@@ -21,13 +21,19 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_selection import chi2, SelectPercentile, f_classif, SelectKBest
 from sklearn.grid_search import GridSearchCV
 from sklearn.linear_model import LogisticRegression
+from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import FeatureUnion
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import LabelEncoder
 from sklearn.cross_validation import StratifiedKFold
+from sklearn.decomposition import RandomizedPCA
+from sklearn.decomposition import ProjectedGradientNMF
+from sklearn.decomposition import DictionaryLearning
+
 import docopt
 import json
 import xgboost as xgb
+import numpy
 import nltk
 
 
@@ -52,25 +58,14 @@ def load_test_data(filename):
 
 
 LETTER = frozenset("abcdefghijklmnopqrstuvwxyz")
-COUNTER = 0
 def analyze(ingredients):
-    global COUNTER
-    print("Analyze", COUNTER)
-    COUNTER += 1
-    features = Counter()
-    total_length = 0
+    features = []
     for ingredient in ingredients:
         # Remove non-ascii chars
         ingredient = ''.join([l if l in LETTER else ' ' for l in ingredient.lower()])
         splitted = ingredient.split()
-        total_length += len(ingredient)
-        features[ingredient] = 2.0
-        features[splitted[-1]] += 1.0
-        for sub_ingredient in splitted[:-1]:
-            features[sub_ingredient] += 0.5
-    # features["n_features"] = len(features)
-    # features["avg_length"] = total_length / float(len(ingredients))
-    features["n_ingredients"] = len(ingredients)
+        features.append(ingredient)
+        features.extend(splitted)
     return features
 
 
@@ -86,14 +81,29 @@ def main():
 
     print("Load data")
     X_raw, y, uids = load_train_data(train_path)
+    vectorizer = TfidfVectorizer(analyzer=analyze)
+    X_raw = vectorizer.fit_transform(X_raw).toarray()
 
     print("Encode labels")
     labels_encoder = LabelEncoder()
     y = labels_encoder.fit_transform(y)
 
     # Classification
+    print("Extract features")
+    features = Pipeline([
+        ('scl', StandardScaler(copy=True, with_mean=True, with_std=True)),
+        ("union", FeatureUnion([
+#            ('svd', TruncatedSVD(n_components=10)),
+#            ('pca', RandomizedPCA(n_components=10)),
+#            ('nmf', ProjectedGradientNMF(n_components=10)),
+            ('dictionary', DictionaryLearning(n_components=10)),
+            ('f_classif', SelectKBest(f_classif, k=100))
+        ], n_jobs=2))
+    ])
+    X = features.fit_transform(X_raw, y)
+    print(X.shape)
+
     clf = Pipeline([
-        ("tfidf", TfidfVectorizer(analyzer=analyze)),
         ('model', LogisticRegression())
     ])
 
@@ -102,16 +112,21 @@ def main():
     samples = 0
     skf = StratifiedKFold(y, 5)
     for i, (train, test) in enumerate(skf):
-        X_train = (X_raw[j] for j in train)
+        print("%ith fold" % (i + 1))
+        X_train = X[train]
         Y_train = [y[j] for j in train]
-        X_test = (X_raw[j] for j in test)
+        X_test = X[test]
         Y_test = [y[j] for j in test]
 
-        clf.fit_transform(X_train, Y_train)
+        print("Train")
+        print(X_train.shape)
+        clf.fit(X_train, Y_train)
+        print("Predict")
+        print(X_test.shape)
         predictions = clf.predict(X_test)
 
         score += compute_score(Y_test, predictions)
-        samples += len(X)
+        samples += len(Y_test)
 
     print("Score:", score / float(samples))
     return

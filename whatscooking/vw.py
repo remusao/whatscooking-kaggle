@@ -21,7 +21,7 @@ class VW(object):
         else:
             filename = X
         arguments = [
-            "/usr/bin/vw",
+            "vw",
             filename,
             "-f", "model",
             "--cache_file", "cache"
@@ -42,10 +42,11 @@ class VW(object):
         else:
             filename = X
         arguments = [
-            "/usr/bin/vw",
+            "vw",
             "-t",
             "-i", self.model,
             "-p", "output",
+            "-r", "raw_output",
             filename
         ]
         print("$", " ".join(arguments))
@@ -57,22 +58,26 @@ class VW(object):
         return prediction
 
     @staticmethod
-    def make_line(label, features):
+    def make_line(label, features=None, namespaces=None):
         def normalize_feature((feature, score)):
             feature = feature.replace(' ', '_')
             return "%s:%s" % (feature, score)
+        assert (features and not namespaces) or (namespaces and not features)
+        if features is not None:
+            namespaces = {"default": features}
         if label is None:
             label = 1
-        return "%s | %s" % (
-            label,
-            " ".join(map(normalize_feature, features.items()))
-        )
+        namespaces_features = []
+        for name, namespace in namespaces.items():
+            features = " ".join(map(normalize_feature, namespace.items()))
+            namespaces_features.append("|%s %s" % (name, features))
+        return "%s %s" % (label, " ".join(namespaces_features))
 
     @staticmethod
     def output_data(filename, X, y=[]):
         print(filename)
         with open(filename, "wb") as output:
-            for features, response in itertools.izip_longest(X, y, fillvalue=None):
+            for namespaces, response in itertools.izip_longest(X, y, fillvalue=None):
                 print(
-                    VW.make_line(response, features=features).encode("utf-8"),
+                    VW.make_line(response, namespaces=namespaces).encode("utf-8"),
                     file=output)

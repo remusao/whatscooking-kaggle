@@ -74,7 +74,13 @@ def main():
     # Select best options
     arguments = [
         "--oaa", "20",
-        "--passes", "1000"
+        "-b", "24",
+        "--passes", "1",
+        "--sort_features",
+        #"--ect", "20",
+        # "--log_multi", "20",
+        "-q", "iq"
+    # ['--sgd', '--adaptative', '--invariant', '--normalized'],
     ]
     # Eval model with kfold
     total = 0

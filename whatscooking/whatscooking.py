@@ -30,9 +30,10 @@ from sklearn.decomposition import RandomizedPCA
 from sklearn.decomposition import ProjectedGradientNMF
 from sklearn.decomposition import DictionaryLearning
 
+from sklearn import ensemble
+
 import docopt
 import json
-import xgboost as xgb
 import numpy
 import nltk
 
@@ -82,30 +83,24 @@ def main():
     print("Load data")
     X_raw, y, uids = load_train_data(train_path)
     vectorizer = TfidfVectorizer(analyzer=analyze)
-    X_raw = vectorizer.fit_transform(X_raw).toarray()
+    X = vectorizer.fit_transform(X_raw).toarray()
 
     print("Encode labels")
     labels_encoder = LabelEncoder()
     y = labels_encoder.fit_transform(y)
 
     # Classification
-    print("Extract features")
-    features = Pipeline([
-        ('scl', StandardScaler(copy=True, with_mean=True, with_std=True)),
-        ("union", FeatureUnion([
-#            ('svd', TruncatedSVD(n_components=10)),
-#            ('pca', RandomizedPCA(n_components=10)),
-#            ('nmf', ProjectedGradientNMF(n_components=10)),
-            ('dictionary', DictionaryLearning(n_components=10)),
-            ('f_classif', SelectKBest(f_classif, k=100))
-        ], n_jobs=2))
-    ])
-    X = features.fit_transform(X_raw, y)
     print(X.shape)
-
-    clf = Pipeline([
-        ('model', LogisticRegression())
-    ])
+    clf_base = ensemble.RandomForestClassifier(
+        n_estimators=100,
+        criterion="entropy",
+        max_features=None,
+        random_state=42,
+        n_jobs=-1)
+    clf = ensemble.AdaBoostClassifier(
+        clf_base,
+        n_estimators=4,
+        random_state=10)
 
     print("Split train data")
     score = 0

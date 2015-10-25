@@ -15,16 +15,13 @@ CORRECTION = {
     "corn,": "corn",
     "crabmeat": "crab"
 }
-
-
 with open("features.txt", "rb") as input_features:
     FEATURES = frozenset(input_features.read().split("\n"))
 LEMMATIZER = WordNetLemmatizer()
+
 def analyze(ingredients):
     features = defaultdict(dict)
     for ingredient in ingredients:
-        # Remove non-ascii chars
-        # normalized = unidecode.unidecode(ingredient)
         normalized = re.sub(ur"\([^)]*\)", "", ingredient).strip().lower()
         normalized = re.sub(ur"\s+", " ", normalized)
         splitted = map(LEMMATIZER.lemmatize, re.split(ur"\s+", normalized))
@@ -34,4 +31,3 @@ def analyze(ingredients):
         features[""][" ".join(corrected)] = 1.0
         for sub_ingredient in corrected:
             features[""][sub_ingredient] = 1.0
-    return features

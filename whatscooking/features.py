@@ -31,3 +31,4 @@ def analyze(ingredients):
         features[""][" ".join(corrected)] = 1.0
         for sub_ingredient in corrected:
             features[""][sub_ingredient] = 1.0
+    return features

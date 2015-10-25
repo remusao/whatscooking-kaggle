@@ -17,6 +17,7 @@ from __future__ import print_function
 from collections import defaultdict, Counter
 import docopt
 import json
+import regex
 
 
 def load_train_data(filename):

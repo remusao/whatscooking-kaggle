@@ -71,17 +71,10 @@ def main():
     with open("uids.txt", "rb") as input_uids:
         uids = map(int, input_uids)
 
-    # Select best options
     arguments = [
         "--oaa", "20",
-        "-b", "18",
-        "--passes", "1",
-        "--sort_features",
-        "--nn", "100",
-        #"--ect", "20",
-        # "--log_multi", "20",
-        "-q", "iq"
-    # ['--sgd', '--adaptative', '--invariant', '--normalized'],
+        "--passes", "2",
+        "--l1", "0.000001"
     ]
     # Eval model with kfold
     total = 0

@@ -24,7 +24,8 @@ class VW(object):
             "vw",
             filename,
             "-f", "model",
-            "--cache"
+            "--cache",
+            "-k"
         ]
         arguments.extend(self.options)
         print("$", " ".join(arguments))

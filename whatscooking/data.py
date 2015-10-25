@@ -36,6 +36,17 @@ def generate_data(train_path, test_path):
     X, y, uids = load_train_data(train_path)
     X = map(analyze, X)
 
+    from collections import Counter
+    c = Counter()
+    for sample in X:
+        for namespace in sample.values():
+            c.update(namespace)
+    with open("features2.txt", "wb") as output:
+        result = sorted(c.items(), reverse=True, key=lambda f: f[1])
+        for feature, _ in result:
+            if u" " not in feature:
+                print(feature.encode('utf-8'), file=output)
+
     X_unlabeled, uids_test = load_test_data(test_path)
     X_unlabeled = map(analyze, X_unlabeled)
 

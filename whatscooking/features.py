@@ -3,7 +3,7 @@
 
 
 from __future__ import print_function
-from collections import defaultdict
+import nltk
 from nltk.stem.wordnet import WordNetLemmatizer
 import regex as re
 
@@ -15,20 +15,19 @@ CORRECTION = {
     "corn,": "corn",
     "crabmeat": "crab"
 }
-with open("features.txt", "rb") as input_features:
-    FEATURES = frozenset(input_features.read().split("\n"))
-LEMMATIZER = WordNetLemmatizer()
 
+
+STOPWORDS = frozenset(nltk.corpus.stopwords.words('english'))
+LEMMATIZER = WordNetLemmatizer()
 def analyze(ingredients):
-    features = defaultdict(dict)
+    features = []
     for ingredient in ingredients:
-        normalized = re.sub(ur"\([^)]*\)", "", ingredient).strip().lower()
-        normalized = re.sub(ur"\s+", " ", normalized)
-        splitted = map(LEMMATIZER.lemmatize, re.split(ur"\s+", normalized))
-        corrected = filter(lambda f: f in FEATURES, map(lambda f: CORRECTION.get(f, f), splitted))
-        if not corrected:
-            continue
-        features[""][" ".join(corrected)] = 1.0
-        for sub_ingredient in corrected:
-            features[""][sub_ingredient] = 1.0
-    return features
+        # Lemmatize words
+        splitted = map(
+            LEMMATIZER.lemmatize,
+            filter(None, re.split(ur"\W+", ingredient.lower())))
+        corrected = map(lambda f: CORRECTION.get(f, f), splitted)
+        filtered = filter(lambda t: (t not in STOPWORDS) and len(t) > 2, corrected)
+        features.append('_'.join(filtered))
+        features.extend(filtered)
+    return " ".join(features)
